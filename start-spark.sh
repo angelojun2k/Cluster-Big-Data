@@ -1,11 +1,22 @@
 #!/bin/bash
 
-# Iniciar o Spark Master
-start-master.sh &
+. "/opt/spark/bin/load-spark-env.sh"
 
-# Iniciar o Spark Worker
-start-worker.sh spark://spark-master:7077 &
+if [ "$SPARK_WORKLOAD" == "master" ];
+then
 
-# Iniciar o Jupyter Notebook
-jupyter notebook --ip=0.0.0.0 --port=8888 --allow-root --NotebookApp.token='' --NotebookApp.password='' &
+export SPARK_MASTER_HOST=`hostname`
 
+cd /opt/spark/bin && ./spark-class org.apache.spark.deploy.master.Master --ip $SPARK_MASTER_HOST --port $SPARK_MASTER_PORT --webui-port $SPARK_MASTER_WEBUI_PORT >> $SPARK_MASTER_LOG
+
+elif [ "$SPARK_WORKLOAD" == "worker" ];
+then
+
+cd /opt/spark/bin && ./spark-class org.apache.spark.deploy.worker.Worker --webui-port $SPARK_WORKER_WEBUI_PORT $SPARK_MASTER >> $SPARK_WORKER_LOG
+
+elif [ "$SPARK_WORKLOAD" == "submit" ];
+then
+    echo "SPARK SUBMIT"
+else
+    echo "Undefined Workload Type $SPARK_WORKLOAD, must specify: master, worker, submit"
+fi

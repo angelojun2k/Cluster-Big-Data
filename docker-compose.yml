@@ -1,35 +1,72 @@
 services:
   spark-master:
-    image: apache/spark-py
-    command: start-master.sh
+    image: cluster-apache-spark:3.0.2
     ports:
-      - "8080:8080"
+      - "9090:8080"
       - "7077:7077"
+    volumes:
+       - D:/docker/local/wsl/mtm/disk01/master/apps:/opt/spark-apps
+       - D:/docker/local/wsl/mtm/disk01/master/data:/opt/spark-data
+    environment:
+      - SPARK_LOCAL_IP=spark-master
+      - SPARK_WORKLOAD=master
     networks:
       my-network:
         ipv4_address: 10.0.0.2
 
-  spark-worker-1:
-    image: apache/spark-py
-    command: start-worker.sh spark://spark-master:7077
+  spark-worker-a:
+    image: cluster-apache-spark:3.0.2
+    ports:
+      - "9091:8080"
+      - "7000:7000"
     depends_on:
       - spark-master
-    deploy:
-      replicas: 1
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_DRIVER_MEMORY=1G
+      - SPARK_EXECUTOR_MEMORY=1G
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker-a
+    volumes:
+       - D:/docker/local/wsl/mtm/disk01/worker-a/apps:/opt/spark-apps
+       - D:/docker/local/wsl/mtm/disk01/worker-a/data:/opt/spark-data
     networks:
       my-network:
         ipv4_address: 10.0.0.3
 
-  spark-worker-2:
-    image: apache/spark-py
-    command: start-worker.sh spark://spark-master:7077
+  spark-worker-b:
+    image: cluster-apache-spark:3.0.2
+    ports:
+      - "9092:8080"
+      - "7001:7000"
     depends_on:
       - spark-master
-    deploy:
-      replicas: 1
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKER_CORES=1
+      - SPARK_WORKER_MEMORY=1G
+      - SPARK_DRIVER_MEMORY=1G
+      - SPARK_EXECUTOR_MEMORY=1G
+      - SPARK_WORKLOAD=worker
+      - SPARK_LOCAL_IP=spark-worker-b
+    volumes:
+        - D:/docker/local/wsl/mtm/disk01/worker-b/apps:/opt/spark-apps
+        - D:/docker/local/wsl/mtm/disk01/worker-b/data:/opt/spark-data
     networks:
       my-network:
         ipv4_address: 10.0.0.4
+
+  demo-database:
+    image: postgres:11.7-alpine
+    ports: 
+      - "5432:5432"
+    environment: 
+      - POSTGRES_PASSWORD=casa1234
+    networks:
+      my-network:
+        ipv4_address: 10.0.0.5
 
   jupyter:
     image: jupyter/pyspark-notebook
@@ -37,12 +74,12 @@ services:
     ports:
       - "8888:8888"
     volumes:
-      - .:/home/jovyan/work
+      - - D:/docker/local/wsl/mtm/disk01/jupyter/notebook:/home/jovyan/work
     environment:
       JUPYTER_ENABLE_LAB: "yes"
     networks:
       my-network:
-        ipv4_address: 10.0.0.5
+        ipv4_address: 10.0.0.6
 
   minio:
     image: minio/minio
@@ -53,10 +90,10 @@ services:
       MINIO_ACCESS_KEY: minioadmin
       MINIO_SECRET_KEY: minioadmin
     volumes:
-      - D:/docker/local/wsl/mtm/disk02/minio_data:/data  # Usando caminho no host
+      - D:/docker/local/wsl/mtm/disk01/minio_data:/data  # Usando caminho no host
     networks:
       my-network:
-        ipv4_address: 10.0.0.6
+        ipv4_address: 10.0.0.7
 
 networks:
   my-network:
